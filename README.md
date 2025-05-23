@@ -6,7 +6,6 @@
 
 이 프로젝트는 2023년 무신사가 모바일 앱으로 전환하면서 PC 버전이 사라진 것을 계기로 시작했습니다. 과거 무신사의 직관적인 PC 쇼핑 경험을 재현하면서, Instagram의 소셜 기능을 접목하여 새로운 형태의 커머스 플랫폼을 구축했습니다. 단순한 상품 구매를 넘어 사용자들이 자신만의 스타일을 공유하고 소통할 수 있는 공간을 만들고자 했습니다.
 
-
 ### 개인 기여
 - AWS EC2/S3 기반 클라우드 아키텍처 구축
 - 스냅샷(팔로우, 채팅, 댓글 시스템 구현) 구현
@@ -14,14 +13,13 @@
 - S3 CDN 활용 이미지 전송 최적화
 - 관리자 기능 멘토
 
-
 ## 시스템 아키텍처
 
 ### MVC 패턴 구현
 ```
 [Client Request]
       ↓
-[Front Controller (Single Servlet)]
+[Front Controller (Controller/UploadController)]
       ↓
 [Action Interface] ← [Action Factory]
       ↓
@@ -35,14 +33,15 @@
 ### Action Interface 구조
 ```java
 public interface Action {
-    public void execute(HttpServletRequest request, HttpServletResponse response) 
+    public String execute(HttpServletRequest request, HttpServletResponse response) 
         throws ServletException, IOException;
 }
 ```
 
 ### 요청 처리 흐름
-1. **Front Controller (Single Servlet)**
-   - 모든 HTTP 요청을 단일 진입점으로 처리
+1. **Front Controller**
+   - Controller: 일반 HTTP 요청 처리
+   - UploadController: 파일 업로드 요청 처리 (최대 10MB)
    - URL 패턴에 따른 Action 매핑
    - Properties 파일 기반 동적 Action 객체 생성
 
@@ -50,6 +49,7 @@ public interface Action {
    - 비즈니스 로직의 표준화된 인터페이스 정의
    - Command 패턴을 통한 요청 처리 캡슐화
    - 각 도메인별 Action 구현체 분리
+   - JSP 뷰 경로 반환
 
 3. **Service Layer**
    - 비즈니스 로직 처리
@@ -65,146 +65,77 @@ public interface Action {
 
 ### 백엔드
 - Java 8
-- JSP/Servlet
+- Spring Framework
 - MyBatis
 - MySQL
+- AWS (EC2, S3)
 
 ### 프론트엔드
 - HTML5/CSS3
-- JavaScript/jQuery
-- Bootstrap
-- Summernote
-
-### 인프라
-- AWS EC2
-- AWS S3
-- MySQL 8.0
+- JavaScript
+- JSP
 
 ### 개발 도구
-- Maven
-- Apache Tomcat 9
+- Eclipse
 - Git
+- Maven
 
 ## 주요 기능
 
-### 쇼핑몰 핵심 기능
-- 상품 관리: 카테고리별 상품 등록, 수정, 삭제
-- 주문 시스템: 장바구니, 결제, 배송 관리
-- 회원 관리: 등급별 혜택, 포인트 적립
-- 쿠폰 시스템: 할인 쿠폰 발행 및 관리
+### 쇼핑몰 기능
+- 회원 관리 (가입, 로그인, 정보 수정)
+- 상품 관리 (CRUD)
+- 장바구니
+- 주문/결제
+- 포인트/쿠폰 시스템
+- 리뷰/평가
 
 ### SNS 기능
-- 스냅 공유: 상품 연동 스타일 포스팅
-- 팔로우 시스템: 사용자 간 구독 관계
-- 실시간 채팅: 1:1 다이렉트 메시지
-- 댓글 시스템: 스냅에 대한 실시간 피드백
-- 좋아요 기능: 스냅 및 상품 관심 표시
+- 팔로우/팔로잉
+- 실시간 채팅
+- 댓글/좋아요
+- 프로필 관리
 
 ### 관리자 기능
-- 판매자 관리: 입점 승인, 정산 관리
-- 고객 관리: 회원 등급, 포인트 관리
-- 상품 관리: 카테고리, 재고 관리
-- 통계 분석: 매출, 방문자 통계
+- 회원 관리
+- 상품 관리
+- 주문 관리
+- 통계/리포트
 
 ## 프로젝트 구조
-
 ```
-Project/
-├── src/main/
+src/
+├── main/
 │   ├── java/
-│   │   ├── comm/
-│   │   │   ├── control/Controller.java    # Front Controller
-│   │   │   ├── dao/                      # Data Access Objects
-│   │   │   ├── service/S3Uploader.java   # AWS S3 Service
-│   │   │   └── vo/                       # Value Objects
-│   │   ├── user/action/
-│   │   │   ├── customer/                 # Customer Actions
-│   │   │   └── Snap/                     # SNS Actions
-│   │   ├── seller/action/                # Seller Actions
-│   │   ├── admin/action/                 # Admin Actions
-│   │   └── service/FactoryService.java   # MyBatis Factory
+│   │   ├── comm/          # 공통 유틸리티
+│   │   ├── user/          # 사용자 관련 기능
+│   │   ├── seller/        # 판매자 관련 기능
+│   │   └── admin/         # 관리자 관련 기능
 │   ├── resources/
-│   │   └── mybatis/
-│   │       ├── config/config.xml         # MyBatis Configuration
-│   │       └── mapper/                   # SQL Mappers
+│   │   ├── mybatis/       # MyBatis 설정 및 매퍼
+│   │   └── properties/    # 설정 파일
 │   └── webapp/
-│       ├── WEB-INF/
-│       │   └── action.properties         # Action Mapping
-│       ├── customer/                     # Customer JSPs
-│       ├── seller/                       # Seller JSPs
-│       ├── admin/                        # Admin JSPs
-│       └── snap/                         # SNS JSPs
-└── pom.xml                              # Maven Dependencies
+│       ├── WEB-INF/       # 웹 설정
+│       └── views/         # JSP 뷰
+└── test/                  # 테스트 코드
 ```
-
-## 데이터베이스 구조
-
-### 핵심 테이블
-- customer: 고객 정보 및 등급 관리
-- seller: 판매자 정보 및 브랜드 관리
-- product: 상품 정보 및 재고 관리
-- order: 주문 및 결제 정보
-- cart: 장바구니 관리
-
-### SNS 테이블
-- board: 스냅 게시물 정보
-- follow: 팔로우 관계 관리
-- chat: 실시간 채팅 메시지
-- reply: 댓글 및 대댓글
-- like: 좋아요 관계 관리
-
-## 설치 및 설정
-
-### 필수 요구사항
-- Java 8 이상
-- Apache Tomcat 9
-- Maven 3.6+
-- MySQL 8.0
-- AWS 계정 (EC2, S3)
-
-### 환경 설정
-1. 데이터베이스 설정
-   ```sql
-   CREATE DATABASE shop CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-
-2. AWS 인증 정보 설정
-   ```bash
-   export AWS_ACCESS_KEY_ID=your_access_key
-   export AWS_SECRET_ACCESS_KEY=your_secret_key
-   ```
-
-3. MyBatis 설정
-   ```xml
-   <!-- config.xml -->
-   <property name="url" value="jdbc:mysql://your-ec2-ip/shop"/>
-   <property name="username" value="your_username"/>
-   <property name="password" value="your_password"/>
-   ```
 
 ## 프로젝트 경험
 
-### 도전과 해결
-1. **단일 서블릿 라우팅**
-   - 문제: 다양한 도메인의 요청을 하나의 서블릿으로 처리
-   - 해결: Properties 파일 기반 동적 Action 매핑 구현
-
-2. **이미지 관리**
-   - 문제: 대용량 이미지 파일의 효율적 관리
-   - 해결: AWS S3를 통한 스토리지 분리 및 구조화
-
-3. **실시간 소셜 기능**
-   - 문제: 실시간 채팅 및 알림 시스템 구현
-   - 해결: AJAX 기반 비동기 통신 및 폴링 방식 적용
-
-4. **클라우드 보안**
-   - 문제: 민감한 정보의 안전한 관리
-   - 해결: 환경변수 기반 설정 관리 및 VPC 구성
+### 아키텍처 설계
+- MVC 패턴을 활용한 명확한 계층 분리
+- Action 인터페이스를 통한 요청 처리 표준화
+- MyBatis를 활용한 효율적인 데이터 접근
 
 ### 성능 최적화
-- 데이터베이스 연결 풀링
-- 쿼리 최적화
-- 이미지 전송 최적화
-- 인덱스 적용
+- Connection Pool을 통한 DB 연결 관리
+- S3 CDN을 활용한 이미지 전송 최적화
+- 효율적인 SQL 쿼리 설계
 
-## 팀 구성 및 기여
+### 보안
+- 세션 기반 인증/인가
+- SQL 인젝션 방지
+- XSS 방어
+
+## 라이선스
+이 프로젝트는 MIT 라이선스를 따릅니다.
